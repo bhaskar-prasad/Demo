@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        PYTHON_VERSION = 'python3'
+        // Define the email recipients
+        EMAIL_RECIPIENTS = 'bhaskars.co@gmail.com'
     }
 
     stages {
@@ -12,18 +13,28 @@ pipeline {
             }
         }
 
-
-
-        stage('Deploy') {
+        stage('Install Dependencies') {
             steps {
-                echo 'Deploying the application...'
+                sh 'python3 -m pip install --upgrade pip'
+                sh 'python3 -m pip install -r requirements.txt'
             }
         }
+
     }
 
     post {
         always {
-            echo 'Cleaning up...'
+            emailext(
+                to: "${EMAIL_RECIPIENTS}",
+                subject: "Jenkins Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
+                body: """
+                Build Number: ${env.BUILD_NUMBER}
+                Project: ${env.JOB_NAME}
+                Status: ${currentBuild.currentResult}
+                URL: ${env.BUILD_URL}
+                """,
+                attachLog: true
+            )
         }
         success {
             echo 'Build succeeded!'
